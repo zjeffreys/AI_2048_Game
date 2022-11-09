@@ -4,26 +4,15 @@ Version: 1.0.0
 Milestone #2
 """
 import sys
+import os
 import random
 
 OUT_FILE = "2048_out.txt"
 
 class Game():
-  
-    # def __init__(self, init_board):
-    #     print('nil')
-    #     self.board = init_board
     
     @staticmethod
     def Left(state):
-        
-        """
-        This method creates takes in a state, and returns 
-        a new state after moving the game pieces left
-
-        @param state: A 2D array describing the start state of the board
-        @return A tuple consisting of the new 2D array and points score from move
-        """
         points = 0
         board = state
         for i, row in enumerate(board):
@@ -93,7 +82,13 @@ class Game():
         return board
     
     @staticmethod
-    def add_a_random_num(state, number = 2):
+    def add_a_random_num(state, number = 2, include_second_num = False):
+        num = number
+
+        #choose two or four at random
+        if(include_second_num):
+            num = random.randrange(2, 5, 2)
+
         board = state
         zero_index = Game.count_zeros(board)
         if(zero_index == 0): # no more zeros just return original board
@@ -105,10 +100,33 @@ class Game():
                 if(board[row_index][col_index] == 0):
                     index = index + 1
                     if(index == zero_index):
-                        board[row_index][col_index] = number
+                        board[row_index][col_index] = num
                         return board
         return board #shouldn't ever reach here 
-                    
+
+    @staticmethod
+    def is_game_over(state):
+        isOver = False
+        isAllZero = True
+
+        if(Game.count_zeros(state) == 0):
+            scores = []
+            states = generate_all_next_states(state)
+            for board in states:
+                s, m = board
+                board, score = s
+                scores.append(score)
+            for s in scores:
+                if s > 0:
+                    isAllZero = False
+            if(isAllZero):
+                isOver = True
+                print("No More Moves")
+
+               
+
+        
+        return isOver
 
     @staticmethod
     def count_zeros(state):
@@ -208,8 +226,14 @@ def choose_best_next_state(states):
         board, score = s
         if(score > max_state_score):
             max_state = state
-    return max_state
+            max_state_score = score
 
+    # if all states max state is equal to zero choose randomly
+    # So it doesn't get stuck in ['L', 'L']
+    if(max_state_score == 0):
+        max_state = choose_random_state(states)
+
+    return max_state
 
 def run_random_local_search(board, N=100):
     curr_score = 0
@@ -217,21 +241,31 @@ def run_random_local_search(board, N=100):
     trials = 0
     moves = []
 
-    print("Initial 2048 Board")
-    Game.print_board(board)
-
+    print("Randomly select one of the next states that has an Non-zero Current Score + Next Score:")
     for i in range(N): 
         gen_next_states = generate_all_next_states(current_state[0])
         next_state, next_move = choose_random_state(gen_next_states)   
-        current_state = (Game.add_a_random_num(next_state[0]), next_state[1])
-        Game.print_board(next_state[0])
+
+        # Add a Random 2 or 4 to board
+        current_state = (Game.add_a_random_num(next_state[0]), next_state[1], True)
         moves.append(next_move)
+        text = "Current Score({curr}) + Next Score({next}) = {final}".format(curr=curr_score, next=current_state[1], final=curr_score + current_state[1])
+        print(text)
         curr_score =curr_score + current_state[1]
+
+        current_state = current_state # some local var error 
+
+        #if there are no more moves Game Over
+        if(Game.is_game_over(current_state[0])):
+            print("Game Over")
+            break
+
         if(curr_score == 0): 
-            print("current score + next score is zero")
+            print("current score + next score is zero...GAME OVER")
             break
         if(curr_score == 2048):
             print("WINNER WINNER CHICKEN DINNER!! GREAT JOB!")
+            exit(1)
             break
 
         trials = trials + 1
@@ -240,7 +274,7 @@ def run_random_local_search(board, N=100):
         "sequence_of_moves": moves, 
         "final_arrangment": current_state[0]
     }
-    print("Final Board:")
+    print("\nFinal Board:")
     Game.print_board(current_state[0])
     print("Score:", proper_data_structure["final_score"], ". Trials:", trials, " Moves:", proper_data_structure["sequence_of_moves"])
     print()
@@ -251,18 +285,24 @@ def run_maximizing_local_search(board, N=25):
     trials = 0
     moves = []
 
-    print("Initial 2048 Board")
-    Game.print_board(board)
-
+    print("Randomly select one of the next states that has the maximum current and next score: ")
     for i in range(N): 
         gen_next_states = generate_all_next_states(current_state[0])
         next_state, next_move = choose_best_next_state(gen_next_states)   
-        current_state = (Game.add_a_random_num(next_state[0]), next_state[1])
-        Game.print_board(next_state[0])
+
+        # Add a random 2 or 4 to board
+        current_state = (Game.add_a_random_num(next_state[0]), next_state[1], True) 
         moves.append(next_move)
+        text = "Current Score({curr}) + Next Score({next}) = {final}".format(curr=curr_score, next=current_state[1], final=curr_score + current_state[1])
+        print(text)
         curr_score =curr_score + current_state[1]
+
+        if(Game.is_game_over(current_state[0])):
+            print("Game Over")
+            break
+
         if(curr_score == 0): 
-            print("current score + next score is zero")
+            print("current score + next score is zero...Game Over.")
             break
         if(curr_score == 2048):
             print("WINNER WINNER CHICKEN DINNER!! GREAT JOB!")
@@ -274,28 +314,51 @@ def run_maximizing_local_search(board, N=25):
         "sequence_of_moves": moves, 
         "final_arrangment": current_state[0]
     }
-    print("Final Board:")
+    print("\nFinal Board:")
     Game.print_board(current_state[0])
     print("Score:", proper_data_structure["final_score"], ". Trials:", trials, " Moves:", proper_data_structure["sequence_of_moves"])
     print()
 
+def setup_game(start_state):
+    board = start_state
+    print("Initial 2048 Board")
+    Game.print_board(board)
 
+    # Add two 2's randomly placed on board
+    print("Board afer adding 2 randomly places twos: ")
+    one = Game.add_a_random_num(board)
+    two = Game.add_a_random_num(one)
+    Game.print_board(two)
+    return two
 
-   
- 
-
+def start_game(boards):
+    print("\nWelcome To The 2048 Game!\n")
+    playGame = False
+    while(not playGame):
+        game = int(input("Type 0 to play Random_Local_Seach, or 1 to play Max_Local_Search: "))
+        if(game == 0 or game == 1):
+            playGame = True
+            if(game == 0):
+                print(">>>You Selected Random Local Search\n")
+                N = int(input("How many iterations should I run? (Press Enter for 100): ") or 100) 
+                for start_state in boards:
+                    start_state = setup_game(start_state)
+                    run_random_local_search(start_state, N=N)
+            if(game == 1):
+                print(">>>You Selected Maximizing Local Search\n")
+                N = int(input("How many iterations should I run? (Press Enter for 25): ")or 25) 
+                for start_state in boards:
+                    start_state = setup_game(start_state)
+                    run_maximizing_local_search(start_state, N)
 
 if __name__ == '__main__':
     if len(sys.argv) != 2:
         print("Usage: python3 play.py 2048_in.txt")
         exit(1)
+
+    os.system('cls||clear')
     initial_boards, N = parse_file(sys.argv[1])
-    run_random_local_search(initial_boards[0])
-
-    run_maximizing_local_search(initial_boards[0])
-
-   
-    
+    start_game(initial_boards)
 
     # write_to_file(games, OUT_FILE)
 
