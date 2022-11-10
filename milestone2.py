@@ -82,13 +82,8 @@ class Game():
         return board
     
     @staticmethod
-    def add_a_random_num(state, number = 2, include_second_num = False):
+    def add_a_random_num(state, number = 2):
         num = number
-
-        #choose two or four at random
-        if(include_second_num):
-            num = random.randrange(2, 5, 2)
-
         board = state
         zero_index = Game.count_zeros(board)
         if(zero_index == 0): # no more zeros just return original board
@@ -204,14 +199,26 @@ def write_to_file(games, output_file):
 def generate_all_next_states(board):
     """
     Generates all states and returns them as a list
+    2(ED, EU, ER, EL) 
     """
 
-    state_left = (Game.Left(board), 'L')
-    state_up = (Game.Up(board), 'U')
-    state_right = (Game.Right(board), 'R')
-    state_down = (Game.Down(board), 'D')
-    states = [state_left, state_up, state_right, state_down]
+    # ASSUMPTION: I am assuming that we move left than add a 2 or 4
+    board_after_adding_random_2 = Game.add_a_random_num(board)
+    board_after_adding_random_4 = Game.add_a_random_num(board, number=4)
 
+    # Add random 2 then move (L, U, R, D)
+    state_left_2 = (Game.Left(board_after_adding_random_2), 'L')
+    state_up_2 = (Game.Up(board_after_adding_random_2), 'U')
+    state_right_2 = (Game.Right(board_after_adding_random_2), 'R')
+    state_down_2 = (Game.Down(board_after_adding_random_2), 'D')
+
+    # Add random 4 then move (L, U, R, D)
+    state_left_4 = (Game.Left(board_after_adding_random_4), 'L')
+    state_up_4 = (Game.Up(board_after_adding_random_4), 'U')
+    state_right_4 = (Game.Right(board_after_adding_random_4), 'R')
+    state_down_4 = (Game.Down(board_after_adding_random_4), 'D')
+
+    states = [state_left_2, state_up_2, state_right_2, state_down_2, state_left_4, state_up_4, state_right_4, state_down_4]
     return states
 
 def choose_random_state(states):
@@ -242,12 +249,11 @@ def run_random_local_search(board, N=100):
     moves = []
 
     print("Randomly select one of the next states that has an Non-zero Current Score + Next Score:")
-    for i in range(N): 
+    for i in range(N):
+        trials = trials + 1
         gen_next_states = generate_all_next_states(current_state[0])
         next_state, next_move = choose_random_state(gen_next_states)   
-
-        # Add a Random 2 or 4 to board
-        current_state = (Game.add_a_random_num(next_state[0]), next_state[1], True)
+        current_state = (next_state[0], next_state[1], True)
         moves.append(next_move)
         text = "Current Score({curr}) + Next Score({next}) = {final}".format(curr=curr_score, next=current_state[1], final=curr_score + current_state[1])
         print(text)
@@ -256,19 +262,24 @@ def run_random_local_search(board, N=100):
         current_state = current_state # some local var error 
 
         #if there are no more moves Game Over
+       
         if(Game.is_game_over(current_state[0])):
             print("Game Over")
             break
 
-        if(curr_score == 0): 
+        # I don't understand when the curr and next score will ever be 0 but in the very beginning 
+        # or in an infinite loop so added inf loop
+        not_on_first_few_moves = 0
+        MAX_BEFORE_ERROR = 20
+        if(curr_score == 0 and not_on_first_few_moves > MAX_BEFORE_ERROR): 
             print("current score + next score is zero...GAME OVER")
             break
+
         if(curr_score == 2048):
             print("WINNER WINNER CHICKEN DINNER!! GREAT JOB!")
-            exit(1)
             break
 
-        trials = trials + 1
+        
     proper_data_structure = {
         "final_score": curr_score, 
         "sequence_of_moves": moves, 
@@ -291,12 +302,12 @@ def run_maximizing_local_search(board, N=25):
         next_state, next_move = choose_best_next_state(gen_next_states)   
 
         # Add a random 2 or 4 to board
-        current_state = (Game.add_a_random_num(next_state[0]), next_state[1], True) 
+        current_state = (Game.add_a_random_num(next_state[0]), next_state[1]) 
         moves.append(next_move)
         text = "Current Score({curr}) + Next Score({next}) = {final}".format(curr=curr_score, next=current_state[1], final=curr_score + current_state[1])
         print(text)
         curr_score =curr_score + current_state[1]
-
+        trials = trials + 1
         if(Game.is_game_over(current_state[0])):
             print("Game Over")
             break
@@ -308,7 +319,6 @@ def run_maximizing_local_search(board, N=25):
             print("WINNER WINNER CHICKEN DINNER!! GREAT JOB!")
             break
 
-        trials = trials + 1
     proper_data_structure = {
         "final_score": curr_score, 
         "sequence_of_moves": moves, 
