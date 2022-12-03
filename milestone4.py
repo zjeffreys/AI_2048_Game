@@ -19,7 +19,7 @@ class Game():
         for i, row in enumerate(board):
             for j in range(len(row) - 1):
                 if(row[j] == row[j + 1] and row[j] != 0):
-                    points = row[j] * 2
+                    points = points + row[j] * 2
                     row[j] = row[j] + row[j + 1]
                     row[j + 1] = 0
                 board = Game.bubble(board, i)
@@ -327,30 +327,36 @@ def run_maximizing_current_minimizing_next_score(board, N=100):
     print()
 
 def minimax_decision(board, N=100, d=2):
-    print("\noriginal ")
-    Game.print_board(board)
 
     v = float('-inf')
     m = None
+    score = None
     for m in ['L', 'U', 'R', 'D']:
         val = None
+        curr_score = None
         if m == 'L':
             val = min_value(Game.Left(board), 'L', d-1)
+            curr_score = Game.Left(board)[1]
         elif m =='U': 
             val = min_value(Game.Up(board), 'U', d-1)
+            curr_score = Game.Up(board)[1]
         elif m == 'R': 
             val = min_value(Game.Right(board), 'R', d-1)
+            curr_score = Game.Right(board)[1]
         elif m == "D":
             val = min_value(Game.Down(board), 'D', d-1)
-
+            curr_score = Game.Down(board)[1]
+            
         if(val[0] > v):
+            score = curr_score
             v = val[0]
             m = val[1]
-
-    return v, m
+    print(v, score, m)
+    return v + score, m
 
 def max_value(state, move, step):
     board = state[0]
+    print("maximizer returns: ", state[1], move)
     if Game.is_game_over(state[0]) or step == 0:
         return state[1], move
 
