@@ -378,20 +378,26 @@ def min_value(state, move, step):
         return state[1], move
 
     v = float('inf')
-    for m in ['L', 'U', 'R', 'D']:
-        val = None
-        if m == 'L':
-            val = max_value(Game.Left(board), 'L', step-1)
-        elif m =='U': 
-            val = max_value(Game.Up(board), 'U', step-1)
-        elif m == 'R': 
-            val = max_value(Game.Right(board), 'R', step-1)
-        elif m == "D":
-            val = max_value(Game.Down(board), 'D', step-1)
+    # Get minimum of max for every zero space on the board
+    for row_index, row in enumerate(board):
+        for col_index, col in enumerate(row):
+            if(board[row_index][col_index] == 0):
+                board_with_num = board
+                board_with_num[row_index][col_index] = 2
+                for m in ['L', 'U', 'R', 'D']:
+                    val = None
+                    if m == 'L':
+                        val = max_value(Game.Left(board_with_num), 'L', step-1)
+                    elif m =='U': 
+                        val = max_value(Game.Up(board_with_num), 'U', step-1)
+                    elif m == 'R': 
+                        val = max_value(Game.Right(board_with_num), 'R', step-1)
+                    elif m == "D":
+                        val = max_value(Game.Down(board_with_num), 'D', step-1)
 
-        if(val[0] < v):
-            v = val[0]
-            
+                    if(val[0] < v):
+                        v = val[0]      
+    print("minizer return: ", state[1], v, move)
     return state[1] + v, move
 
 def local_search_algorithm_with_minmax_approach(board, N, steps = 2):
