@@ -3,11 +3,13 @@ Author: Zachary Jeffreys
 Version: 1.0.0
 Milestone #2
 """
+import copy
 import sys
 import os
 import random
 
 OUT_FILE = "2048_out.txt"
+test_i = 0
 
 
 class Game():
@@ -326,11 +328,12 @@ def run_maximizing_current_minimizing_next_score(board, N=100):
     print("Score:", proper_data_structure["final_score"], ". Trials:", trials, " Moves:", proper_data_structure["sequence_of_moves"])
     print()
 
-def minimax_decision(board, N=100, d=2):
-
+def minimax_decision(board, N=100, d=3):
     v = float('-inf')
     m = None
-    score = None
+    score = 0
+    print("minmax_decesion (choose max of these):")
+
     for m in ['L', 'U', 'R', 'D']:
         val = None
         curr_score = None
@@ -340,14 +343,17 @@ def minimax_decision(board, N=100, d=2):
         elif m =='U': 
             val = min_value(Game.Up(board), 'U', d-1)
             curr_score = Game.Up(board)[1]
+            
         elif m == 'R': 
             val = min_value(Game.Right(board), 'R', d-1)
             curr_score = Game.Right(board)[1]
+            
         elif m == "D":
             val = min_value(Game.Down(board), 'D', d-1)
             curr_score = Game.Down(board)[1]
             
-        if(val[0] > v):
+            
+        if(curr_score > score):
             score = curr_score
             v = val[0]
             m = val[1]
@@ -355,56 +361,73 @@ def minimax_decision(board, N=100, d=2):
     return v + score, m
 
 def max_value(state, move, step):
+    """:returns minimum points possible"""
     board = state[0]
-    print("maximizer returns: ", state[1], move)
-    if Game.is_game_over(state[0]) or step == 0:
+    # print("maximizer returns: ", state[1], move)
+    if Game.is_game_over(state[0]) or step==0:
+        # print("max_value() returns:", state[1], move)
+
         return state[1], move
 
     v = float('-inf')
     for m in ['L', 'U', 'R', 'D']:
         val = None
         if m == 'L':
-            val = min_value(Game.Left(board), 'L', step-1)
+            b = copy.deepcopy(board)
+            val = min_value(Game.Left(b), 'L', step-1)
         elif m =='U': 
-            val = min_value(Game.Up(board), 'U', step-1)
+            b = copy.deepcopy(board)
+            val = min_value(Game.Up(b), 'U', step-1)
         elif m == 'R': 
-            val = min_value(Game.Right(board), 'R', step-1)
+            b = copy.deepcopy(board)
+            val = min_value(Game.Right(b), 'R', step-1)
         elif m == "D":
-            val = min_value(Game.Down(board), 'D', step-1)
+            b = copy.deepcopy(board)
+            val = min_value(Game.Down(b), 'D', step-1)
 
         if(val[0] > v):
             v = val[0]
-
-    return state[1] + v, move
+    # print("Returning max value of :", v)
+    return v, move
 
 def min_value(state, move, step):
     """ Goal: find best place to add a 2 or 4 to minimize the maximum next move"""
     board = state[0]
     if Game.is_game_over(state[0]) or step == 0:
+        # print("Break case min:", state[1])
         return state[1], move
 
     v = float('inf')
-    # Get minimum of max for every zero space on the board
-    for row_index, row in enumerate(board):
+    board_with_num = board
+    for row_index, row in enumerate(board_with_num):
         for col_index, col in enumerate(row):
-            if(board[row_index][col_index] == 0):
-                board_with_num = board
+            if(board_with_num[row_index][col_index] == 0):
                 board_with_num[row_index][col_index] = 2
+                # edit from algorithem since i want to min of the max placement for zero 
+                max = float("-inf")
                 for m in ['L', 'U', 'R', 'D']:
                     val = None
                     if m == 'L':
-                        val = max_value(Game.Left(board_with_num), 'L', step-1)
+                        b = copy.deepcopy(board_with_num)
+                        val = max_value(Game.Left(b), 'L', step-1)
                     elif m =='U': 
-                        val = max_value(Game.Up(board_with_num), 'U', step-1)
+                        b = copy.deepcopy(board_with_num)
+                        val = max_value(Game.Up(b), 'U', step-1)
                     elif m == 'R': 
-                        val = max_value(Game.Right(board_with_num), 'R', step-1)
+                        b = copy.deepcopy(board_with_num)
+                        val = max_value(Game.Right(b), 'R', step-1)
                     elif m == "D":
-                        val = max_value(Game.Down(board_with_num), 'D', step-1)
+                        b = copy.deepcopy(board_with_num)
+                        val = max_value(Game.Down(b), 'D', step-1)
 
-                    if(val[0] < v):
-                        v = val[0]      
-    print("minizer return: ", state[1], v, move)
-    return state[1] + v, move
+                    if(val[0] > max):
+                       max = val[0]
+                # return minimum of max zero placement
+                if(max < v):
+                    v = max   
+                board_with_num[row_index][col_index] = 0  
+                print("returning min value of: ", v)
+    return v, move
 
 def local_search_algorithm_with_minmax_approach(board, N, steps = 2):
     curr_score = 0
@@ -412,9 +435,6 @@ def local_search_algorithm_with_minmax_approach(board, N, steps = 2):
     trials = 0
     moves = []
     end = False
-    isMaxTurn = True
-    maxTurns = 0
-    minTurns = 0
     next_state = None
     next_move = None
 
@@ -492,7 +512,6 @@ def start_game(boards):
     playGame = False
     while(not playGame):
         game = int(input("Type 0 to play Maximizing Currant and Minimizing Next, or 1 to play Local Search Algorithm with MiniMax Approach: "))
-        print("TODO://")
         if(game == 0 or game == 1):
             playGame = True
             if(game == 0):
@@ -516,8 +535,9 @@ if __name__ == '__main__':
     os.system('cls||clear')
     initial_boards, N = parse_file(sys.argv[1])
     #start_game(initial_boards)
+    print("Original")
 
-    # 
+    Game.print_board(initial_boards[0])
     print(minimax_decision(initial_boards[0]))
 
     # Write to output file
