@@ -14,8 +14,8 @@ Milestone #3
 * Use Maximizing Local Search Algorithm 
 
 Steps to run: 
-# copy repository
-# python3 milestone1.py 2048_in.txt
-# python3 milestone2.py 2048_in.txt
-# python3 milestone3.py 2048_in.txt
+1. copy repository
+2. python3 milestone1.py 2048_in.txt
+3. python3 milestone2.py 2048_in.txt
+4. python3 milestone3.py 2048_in.txt
 
